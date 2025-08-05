@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerador de Moldes para Costura v3.1</title>
+    <title>Gerador de Moldes para Costura v4.0</title>
     <style>
         :root {
             --primary-color: #2c6e49; /* Verde escuro */
@@ -179,7 +179,7 @@
 
     <div class="container">
         <aside class="controls">
-            <h1>Gerador de Moldes 3.1</h1>
+            <h1>Gerador de Moldes 4.0</h1>
             <label for="bulk-input">Insira as medidas (Nome, Largura x Altura, raio: [valor] [cantos], Qtde):</label>
             <textarea id="bulk-input">Corpo Atrás, 26x15, raio: 3 (todos), 1x Tecido 3x Forro
 Corpo Frente (Baixo), 26x13, raio: 3 (inferiores), 1x Tecido 1x Forro
@@ -240,90 +240,76 @@ Bolso Tela 3, 26x12, raio: 0, 1x Tela</textarea>
         }
 
         function generateLayout() {
-            const pieces = parseBulkInput().sort((a, b) => b.area - a.area);
+            const pieces = parseBulkInput().sort((a, b) => b.h - a.h || b.w - a.w);
             const container = document.getElementById('canvas-container');
             container.innerHTML = '';
 
             let pages = [];
-            let packer = new Packer();
+            let currentPage = null;
+            let currentY = 0;
+
+            const addPage = () => {
+                currentPage = createNewPage(pages.length + 1);
+                pages.push(currentPage);
+                container.appendChild(currentPage);
+                currentY = MARGIN_CM;
+            };
+
+            addPage();
 
             for (const piece of pieces) {
-                if (piece.w > AVAILABLE_WIDTH_CM || piece.h > AVAILABLE_WIDTH_CM) {
+                let w = piece.w;
+                let h = piece.h;
+                let rotated = false;
+
+                // Decidir orientação
+                const fitsNormal = w <= AVAILABLE_WIDTH_CM && h <= AVAILABLE_HEIGHT_CM;
+                const fitsRotated = h <= AVAILABLE_WIDTH_CM && w <= AVAILABLE_HEIGHT_CM;
+
+                if (!fitsNormal && fitsRotated) {
+                    w = piece.h;
+                    h = piece.w;
+                    rotated = true;
+                } else if (fitsNormal && fitsRotated) {
+                    // Se cabe de ambos os jeitos, prefere a que ocupa menos largura (em pé)
+                    if (piece.h > piece.w) { // Peça mais alta que larga
+                        // Mantém em pé
+                    } else { // Peça mais larga que alta
+                        // Rotaciona para ficar em pé
+                        w = piece.h;
+                        h = piece.w;
+                        rotated = true;
+                    }
+                }
+
+                // Se a peça é muito grande para caber de qualquer forma, será dividida
+                if (!fitsNormal && !fitsRotated) {
                     splitAndPlacePiece(piece, pages, container);
+                    // Após dividir, a página atual pode ter mudado, então reinicia o ciclo
+                    currentPage = pages[pages.length - 1];
+                    currentY = findNextAvailableY(currentPage);
                     continue;
                 }
 
-                let fit = packer.fit(piece);
-                if (!fit) {
-                    packer.newPage();
-                    pages.push(createNewPage(pages.length + 1));
-                    container.appendChild(pages[pages.length - 1]);
-                    fit = packer.fit(piece);
+                // Verificar se cabe na página atual
+                if (currentY + h > AVAILABLE_HEIGHT_CM + MARGIN_CM) {
+                    addPage();
                 }
-                
-                if (fit) {
-                    drawPiece(pages[pages.length - 1], piece, fit);
-                }
+
+                drawPiece(currentPage, piece, { x: MARGIN_CM, y: currentY, w: w, h: h, rotated: rotated });
+                currentY += h + GAP_CM;
             }
         }
-
-        class Packer {
-            constructor() {
-                this.newPage();
-            }
-
-            newPage() {
-                this.nodes = [{ x: MARGIN_CM, y: MARGIN_CM, w: AVAILABLE_WIDTH_CM, h: AVAILABLE_HEIGHT_CM }];
-            }
-
-            fit(piece) {
-                let bestNode = null;
-                let bestFitW, bestFitH;
-
-                // Tenta encaixar sem rotação
-                for (let i = 0; i < this.nodes.length; i++) {
-                    let node = this.nodes[i];
-                    if (piece.w <= node.w && piece.h <= node.h) {
-                        bestNode = node;
-                        bestFitW = piece.w;
-                        bestFitH = piece.h;
-                        break;
-                    }
-                }
-
-                // Tenta encaixar com rotação
-                for (let i = 0; i < this.nodes.length; i++) {
-                    let node = this.nodes[i];
-                    if (piece.h <= node.w && piece.w <= node.h) {
-                        if (!bestNode || (bestNode && node.y < bestNode.y)) {
-                            bestNode = node;
-                            bestFitW = piece.h;
-                            bestFitH = piece.w;
-                        }
-                        break;
-                    }
-                }
-
-                if (bestNode) {
-                    const fit = {
-                        x: bestNode.x,
-                        y: bestNode.y,
-                        w: bestFitW,
-                        h: bestFitH,
-                        rotated: bestFitW === piece.h
-                    };
-                    this.splitNode(bestNode, fit.w, fit.h);
-                    return fit;
-                }
-                return null;
-            }
-
-            splitNode(node, w, h) {
-                this.nodes.push({ x: node.x + w + GAP_CM, y: node.y, w: node.w - w - GAP_CM, h: h });
-                this.nodes.push({ x: node.x, y: node.y + h + GAP_CM, w: node.w, h: node.h - h - GAP_CM });
-                this.nodes = this.nodes.filter(n => n.w > 0 && n.h > 0);
-                this.nodes.sort((a, b) => a.y - b.y || a.x - b.x);
-            }
+        
+        function findNextAvailableY(page) {
+            const elements = page.querySelectorAll('.piece-svg');
+            if (elements.length === 0) return MARGIN_CM;
+            let maxY = 0;
+            elements.forEach(el => {
+                const bottom = (parseFloat(el.style.top) / PX_PER_CM) + (parseFloat(el.getAttribute('height')) / PX_PER_CM);
+                if (bottom > maxY) maxY = bottom;
+            });
+            return maxY + GAP_CM;
         }
 
         function drawPiece(page, pieceData, fit) {
@@ -343,7 +329,12 @@ Bolso Tela 3, 26x12, raio: 0, 1x Tela</textarea>
 
             let tl = 0, tr = 0, br = 0, bl = 0;
             if (r > 0) {
-                const c = rotated ? { todos: 'todos', superiores: 'inferiores', inferiores: 'superiores' }[corners] : corners;
+                let c = corners;
+                if (rotated) {
+                    // Inverte a lógica dos cantos se a peça for rotacionada
+                    if (corners === 'superiores') c = 'inferiores';
+                    else if (corners === 'inferiores') c = 'superiores';
+                }
                 if (c.includes('todos')) { tl = tr = br = bl = r_px; }
                 if (c.includes('superiores')) { tl = tr = r_px; }
                 if (c.includes('inferiores')) { bl = br = r_px; }
@@ -369,20 +360,22 @@ Bolso Tela 3, 26x12, raio: 0, 1x Tela</textarea>
         }
         
         function splitAndPlacePiece(piece, pages, container) {
-            let remainingWidth = piece.w;
+            let remainingLength = piece.w > piece.h ? piece.w : piece.h;
+            let isWidthSplit = piece.w > piece.h;
+            let fixedDim = isWidthSplit ? piece.h : piece.w;
+            
             let part = 1;
-            while (remainingWidth > 0) {
-                if (pages.length === 0) {
-                    pages.push(createNewPage(1));
-                    container.appendChild(pages[0]);
-                }
+            while (remainingLength > 0) {
                 const newPage = createNewPage(pages.length + 1);
                 pages.push(newPage);
                 container.appendChild(newPage);
 
-                const widthForThisPart = Math.min(remainingWidth, AVAILABLE_WIDTH_CM);
-                const w_px = widthForThisPart * PX_PER_CM;
-                const h_px = piece.h * PX_PER_CM;
+                const lengthForThisPart = Math.min(remainingLength, AVAILABLE_HEIGHT_CM);
+                
+                const w_cm = isWidthSplit ? fixedDim : lengthForThisPart;
+                const h_cm = isWidthSplit ? lengthForThisPart : fixedDim;
+                const w_px = w_cm * PX_PER_CM;
+                const h_px = h_cm * PX_PER_CM;
 
                 const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
                 svg.setAttribute('class', 'piece-svg');
@@ -394,20 +387,20 @@ Bolso Tela 3, 26x12, raio: 0, 1x Tela</textarea>
                 let path = `<path class="piece-shape" d="M0,0 H${w_px} V${h_px} H0 Z" />`;
                 let joinLines = '';
                 if (part > 1) {
-                    joinLines += `<line class="join-line" x1="1" y1="0" x2="1" y2="${h_px}" /><text class="join-text" x="20" y="${h_px/2}" transform="rotate(-90, 20, ${h_px/2})">Unir com Parte ${part-1}</text>`;
+                    joinLines += `<line class="join-line" x1="0" y1="1" x2="${w_px}" y2="1" /><text class="join-text" x="${w_px/2}" y="15">Unir com Parte ${part-1}</text>`;
                 }
-                if (remainingWidth - widthForThisPart > 0) {
-                    joinLines += `<line class="join-line" x1="${w_px-1}" y1="0" x2="${w_px-1}" y2="${h_px}" /><text class="join-text" x="${w_px-20}" y="${h_px/2}" transform="rotate(90, ${w_px-20}, ${h_px/2})">Unir com Parte ${part+1}</text>`;
+                if (remainingLength - lengthForThisPart > 0) {
+                    joinLines += `<line class="join-line" x1="0" y1="${h_px-1}" x2="${w_px}" y2="${h_px-1}" /><text class="join-text" x="${w_px/2}" y="${h_px-15}">Unir com Parte ${part+1}</text>`;
                 }
                 const text = `<text class="piece-text" x="${w_px/2}" y="${h_px/2}" dominant-baseline="middle">
                                 <tspan class="piece-text-name" x="${w_px/2}">${piece.name} (Parte ${part})</tspan>
-                                <tspan x="${w_px/2}" dy="1.4em">${widthForThisPart.toFixed(1)}cm x ${piece.h.toFixed(1)}cm</tspan>
+                                <tspan x="${w_px/2}" dy="1.4em">${isWidthSplit ? piece.w : lengthForThisPart.toFixed(1)}cm x ${isWidthSplit ? lengthForThisPart.toFixed(1) : piece.h}cm</tspan>
                                 <tspan x="${w_px/2}" dy="1.2em">${piece.qty}</tspan>
                               </text>`;
                 svg.innerHTML = path + joinLines + text;
                 newPage.appendChild(svg);
 
-                remainingWidth -= widthForThisPart;
+                remainingLength -= lengthForThisPart;
                 part++;
             }
         }
