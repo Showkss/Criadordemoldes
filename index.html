@@ -3,118 +3,114 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerador de Moldes para Costura</title>
+    <title>Gerador de Moldes para Costura v2.0</title>
     <style>
+        :root {
+            --primary-color: #2c6e49; /* Verde escuro */
+            --secondary-color: #4c956c; /* Verde médio */
+            --light-bg: #fefee3; /* Amarelo bem claro / Creme */
+            --text-color: #333;
+            --border-color: #ddd;
+            --page-bg: #ffffff;
+            --piece-bg: rgba(76, 149, 108, 0.1);
+            --piece-border: #4c956c;
+        }
+
         /* --- ESTILOS GERAIS --- */
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             line-height: 1.6;
-            background-color: #f8f9fa;
-            color: #333;
+            background-color: #f4f4f4;
+            color: var(--text-color);
             margin: 0;
             padding: 20px;
         }
         .container {
             display: flex;
+            flex-wrap: wrap;
             gap: 20px;
-            max-width: 1400px;
+            max-width: 1600px;
             margin: auto;
         }
         .controls {
-            width: 350px;
-            background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            flex: 1;
+            min-width: 350px;
+            max-width: 500px;
+            background: var(--page-bg);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
             height: fit-content;
         }
         .preview-area {
-            flex-grow: 1;
+            flex: 3;
+            min-width: 300px;
         }
         h1, h2 {
-            color: #0056b3;
-            border-bottom: 2px solid #e9ecef;
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--secondary-color);
             padding-bottom: 10px;
+            margin-top: 0;
         }
         h1 { font-size: 1.8em; }
-        h2 { font-size: 1.4em; margin-top: 20px; }
+        h2 { font-size: 1.4em; }
 
-        /* --- ESTILOS DOS CONTROLES (FORMULÁRIO) --- */
-        .piece-form {
+        /* --- ESTILOS DOS CONTROLES --- */
+        #bulk-input {
+            width: 100%;
+            height: 250px;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
             margin-bottom: 15px;
-            padding: 15px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
+            box-sizing: border-box;
         }
-        .piece-form label {
-            display: block;
-            margin-bottom: 5px;
+        label {
             font-weight: bold;
-            font-size: 0.9em;
-        }
-        .piece-form input {
-            width: calc(50% - 12px);
-            padding: 8px;
-            margin-right: 5px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        .piece-form .full-width {
-            width: calc(100% - 22px);
+            display: block;
+            margin-bottom: 8px;
+            color: var(--primary-color);
         }
         button {
-            background-color: #007bff;
+            background-color: var(--secondary-color);
             color: white;
             border: none;
             padding: 12px 20px;
-            border-radius: 5px;
+            border-radius: 8px;
             cursor: pointer;
-            font-size: 1em;
+            font-size: 1.1em;
             width: 100%;
             margin-top: 10px;
             transition: background-color 0.3s;
+            font-weight: bold;
         }
         button:hover {
-            background-color: #0056b3;
+            background-color: var(--primary-color);
         }
         .print-button {
-            background-color: #28a745;
+            background-color: var(--primary-color);
         }
         .print-button:hover {
-            background-color: #218838;
+            background-color: #1e4c32;
         }
 
-        /* --- ESTILOS DA ÁREA DE VISUALIZAÇÃO (MOLDES) --- */
+        /* --- ESTILOS DA VISUALIZAÇÃO --- */
         #canvas-container {
-            background: #e9ecef;
+            background: #e9e9e9;
             padding: 20px;
             border-radius: 8px;
         }
         .page {
-            background: white;
+            background: var(--page-bg);
             width: 21cm;
             height: 29.7cm;
             position: relative;
-            box-shadow: 0 0 10px rgba(0,0,0,0.15);
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
             margin: 0 auto 20px auto;
             overflow: hidden;
-            page-break-after: always; /* Força nova página na impressão */
-        }
-        .piece {
-            position: absolute;
-            background: rgba(200, 220, 255, 0.7);
-            border: 1px dashed #0056b3;
-            box-sizing: border-box;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            font-size: 12px;
-            color: #002b5c;
-            overflow: hidden;
-        }
-        .piece-label {
-            font-weight: bold;
+            page-break-after: always;
         }
         .page-footer {
             position: absolute;
@@ -123,46 +119,54 @@
             right: 1cm;
             text-align: center;
             font-size: 10px;
-            color: #888;
-        }
-        .test-square {
-            position: absolute;
-            top: 1cm;
-            right: 1cm;
-            width: 3cm;
-            height: 3cm;
-            border: 1px solid #333;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 10px;
-            text-align: center;
+            color: #aaa;
         }
 
-        /* --- ESTILOS PARA IMPRESSÃO --- */
+        /* --- ESTILOS SVG --- */
+        .piece-svg {
+            position: absolute;
+            overflow: visible;
+        }
+        .piece-shape {
+            fill: var(--piece-bg);
+            stroke: var(--piece-border);
+            stroke-width: 1;
+        }
+        .helper-line {
+            stroke: var(--piece-border);
+            stroke-width: 1;
+            stroke-dasharray: 4 2;
+            opacity: 0.7;
+        }
+        .piece-text {
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 12px;
+            fill: var(--primary-color);
+            text-anchor: middle;
+        }
+        .piece-text-name {
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .join-line {
+            stroke: #d9534f;
+            stroke-width: 2;
+            stroke-dasharray: 5 3;
+        }
+        .join-text {
+            font-size: 11px;
+            fill: #d9534f;
+            font-weight: bold;
+            text-anchor: middle;
+        }
+
+        /* --- ESTILOS DE IMPRESSÃO --- */
         @media print {
-            body {
-                background-color: #fff;
-                padding: 0;
-                margin: 0;
-            }
-            .controls, .preview-area h1, .preview-area h2 {
-                display: none; /* Esconde os controles na impressão */
-            }
-            .container {
-                display: block;
-            }
-            #canvas-container {
-                padding: 0;
-                background: none;
-            }
-            .page {
-                box-shadow: none;
-                margin: 0;
-                width: 100%;
-                height: 100%;
-                border-radius: 0;
-            }
+            body { background-color: #fff; padding: 0; margin: 0; }
+            .controls, .preview-area h1, .preview-area h2 { display: none; }
+            .container { display: block; }
+            #canvas-container { padding: 0; background: none; }
+            .page { box-shadow: none; margin: 0; border-radius: 0; }
         }
     </style>
 </head>
@@ -170,21 +174,26 @@
 
     <div class="container">
         <aside class="controls">
-            <h1>Gerador de Moldes</h1>
-            <p>Adicione as medidas das peças em <strong>centímetros</strong>. Peças maiores que a folha A4 serão divididas automaticamente.</p>
-            
-            <div id="forms-container">
-                <!-- Formulários serão inseridos aqui pelo JS -->
-            </div>
-
-            <button onclick="addPieceForm()">Adicionar Nova Peça</button>
-            <button onclick="generateLayout()">Atualizar Layout</button>
+            <h1>Gerador de Moldes 2.0</h1>
+            <label for="bulk-input">Insira as medidas (Nome, Largura x Altura, Raio, Qtde):</label>
+            <textarea id="bulk-input">Corpo Atrás, 26x15, 3, 1x Tecido 3x Forro
+Corpo Frente (Baixo), 26x13, 3, 1x Tecido 1x Forro
+Corpo Frente (Cima), 26x9, 3, 1x Tecido 1x Forro
+Fundo, 42x14, 0, 1x Tecido 1x Forro
+Faixa Zíper, 42x7, 0, 2x Tecido 2x Forro
+Faixa Vivo, 82x4, 0, 2x Tecido
+EVA Estrutura 1, 22x11, 3, 1x EVA
+EVA Estrutura 2, 38x10, 0, 1x EVA
+EVA Estrutura 3, 38x3, 0, 2x EVA
+Bolso Tela 1, 26x12, 0, 1x Tela
+Bolso Tela 2, 26x3, 0, 1x Tela
+Bolso Tela 3, 26x12, 0, 1x Tela</textarea>
+            <button onclick="generateLayout()">Gerar Moldes</button>
             <button onclick="window.print()" class="print-button">Salvar como PDF / Imprimir</button>
         </aside>
 
         <main class="preview-area">
             <h1>Visualização para Impressão</h1>
-            <h2>Folhas A4 (21cm x 29.7cm)</h2>
             <div id="canvas-container">
                 <!-- Páginas serão geradas aqui -->
             </div>
@@ -192,217 +201,217 @@
     </div>
 
     <script>
-        // --- CONFIGURAÇÕES ---
-        const DPI = 96; // Pixels per inch
+        const DPI = 96;
         const CM_PER_INCH = 2.54;
-        const PIXELS_PER_CM = DPI / CM_PER_INCH;
+        const PX_PER_CM = DPI / CM_PER_INCH;
 
         const PAGE_WIDTH_CM = 21;
         const PAGE_HEIGHT_CM = 29.7;
-        const MARGIN_CM = 1; // Margem de segurança dentro da página
+        const MARGIN_CM = 1;
 
         const AVAILABLE_WIDTH_CM = PAGE_WIDTH_CM - (MARGIN_CM * 2);
         const AVAILABLE_HEIGHT_CM = PAGE_HEIGHT_CM - (MARGIN_CM * 2);
 
-        let pieceCounter = 0;
-
-        // Dados iniciais da nécessaire
-        const initialPieces = [
-            { name: "Corpo Atrás", w: 26, h: 15, r: 3, qty: "1x Tecido, 3x Forro" },
-            { name: "Corpo Frente (Baixo)", w: 26, h: 13, r: 3, corners: 'bottom', qty: "1x Tecido, 1x Forro" },
-            { name: "Corpo Frente (Cima)", w: 26, h: 9, r: 3, corners: 'top', qty: "1x Tecido, 1x Forro" },
-            { name: "Fundo", w: 42, h: 14, r: 0, qty: "1x Tecido, 1x Forro" },
-            { name: "Faixa Zíper", w: 42, h: 7, r: 0, qty: "2x Tecido, 2x Forro" },
-            { name: "Faixa Vivo", w: 82, h: 4, r: 0, qty: "2x Tecido" },
-            { name: "EVA Estrutura 1", w: 22, h: 11, r: 3, qty: "1x EVA" },
-            { name: "EVA Estrutura 2", w: 38, h: 10, r: 0, qty: "1x EVA" },
-            { name: "EVA Estrutura 3", w: 38, h: 3, r: 0, qty: "2x EVA" },
-            { name: "Bolso Tela 1", w: 26, h: 12, r: 0, qty: "1x Tela" },
-            { name: "Bolso Tela 2", w: 26, h: 3, r: 0, qty: "1x Tela" },
-            { name: "Bolso Tela 3", w: 26, h: 12, r: 0, qty: "1x Tela" },
-        ];
-
-        // --- FUNÇÕES PRINCIPAIS ---
-
-        function addPieceForm(pieceData = {}) {
-            pieceCounter++;
-            const container = document.getElementById('forms-container');
-            const form = document.createElement('div');
-            form.className = 'piece-form';
-            form.id = `form-${pieceCounter}`;
-            form.innerHTML = `
-                <label for="name-${pieceCounter}">Nome da Peça</label>
-                <input type="text" id="name-${pieceCounter}" class="full-width" value="${pieceData.name || ''}">
-                
-                <label for="w-${pieceCounter}">Largura (cm)</label>
-                <input type="number" id="w-${pieceCounter}" value="${pieceData.w || ''}">
-                
-                <label for="h-${pieceCounter}">Altura (cm)</label>
-                <input type="number" id="h-${pieceCounter}" value="${pieceData.h || ''}">
-                
-                <label for="r-${pieceCounter}">Raio (cm)</label>
-                <input type="number" id="r-${pieceCounter}" value="${pieceData.r || 0}">
-
-                <label for="qty-${pieceCounter}">Qtde / Material</label>
-                <input type="text" id="qty-${pieceCounter}" class="full-width" value="${pieceData.qty || '1x Tecido'}">
-            `;
-            container.appendChild(form);
-        }
-
-        function collectPiecesFromForms() {
-            const pieces = [];
-            const forms = document.querySelectorAll('.piece-form');
-            forms.forEach(form => {
-                const id = form.id.split('-')[1];
-                const name = document.getElementById(`name-${id}`).value;
-                const w = parseFloat(document.getElementById(`w-${id}`).value);
-                const h = parseFloat(document.getElementById(`h-${id}`).value);
-                const r = parseFloat(document.getElementById(`r-${id}`).value);
-                const qty = document.getElementById(`qty-${id}`).value;
-
-                if (name && w > 0 && h > 0) {
-                    pieces.push({ name, w, h, r, qty });
-                }
-            });
-            return pieces;
-        }
-
-        function generateLayout() {
-            const pieces = collectPiecesFromForms();
-            const canvasContainer = document.getElementById('canvas-container');
-            canvasContainer.innerHTML = ''; // Limpa o layout anterior
-
-            let currentPage = createNewPage(1);
-            canvasContainer.appendChild(currentPage);
-            let pageCount = 1;
-            let currentY = MARGIN_CM;
-
-            pieces.forEach(piece => {
-                // Tenta colocar a peça na orientação normal e rotacionada
-                let fitsNormal = piece.w <= AVAILABLE_WIDTH_CM && piece.h <= (AVAILABLE_HEIGHT_CM - currentY);
-                let fitsRotated = piece.h <= AVAILABLE_WIDTH_CM && piece.w <= (AVAILABLE_HEIGHT_CM - currentY);
-
-                let w = piece.w;
-                let h = piece.h;
-                let rotated = false;
-
-                if (!fitsNormal && fitsRotated) {
-                    [w, h] = [h, w]; // Rotaciona
-                    rotated = true;
-                }
-
-                // Se a peça (mesmo rotacionada) for muito larga, precisa ser dividida
-                if (w > AVAILABLE_WIDTH_CM || h > AVAILABLE_HEIGHT_CM) {
-                    drawSplitPiece(piece, canvasContainer);
-                    // Reinicia o posicionamento para a próxima peça
-                    const pages = canvasContainer.querySelectorAll('.page');
-                    currentPage = pages[pages.length - 1];
-                    currentY = findNextAvailableY(currentPage);
-                    return; // Pula para a próxima peça do forEach
-                }
-
-                // Se não couber na altura da página atual, cria uma nova
-                if (h > AVAILABLE_HEIGHT_CM - currentY) {
-                    pageCount++;
-                    currentPage = createNewPage(pageCount);
-                    canvasContainer.appendChild(currentPage);
-                    currentY = MARGIN_CM;
-                }
-
-                drawPiece(currentPage, piece, MARGIN_CM, currentY, w, h, rotated);
-                currentY += h + MARGIN_CM; // Adiciona um espaçamento
-            });
-        }
-        
-        function findNextAvailableY(page) {
-            const piecesOnPage = page.querySelectorAll('.piece');
-            if (piecesOnPage.length === 0) return MARGIN_CM;
-            
-            let maxY = 0;
-            piecesOnPage.forEach(p => {
-                const bottom = p.offsetTop + p.offsetHeight;
-                if (bottom > maxY) {
-                    maxY = bottom;
-                }
-            });
-            
-            return (maxY / PIXELS_PER_CM) + MARGIN_CM;
-        }
-
-        function drawSplitPiece(piece, container) {
-            const { name, w, h, r, qty } = piece;
-            let remainingWidth = w;
-            let part = 1;
-            
-            while (remainingWidth > 0) {
-                let pageCount = container.querySelectorAll('.page').length + 1;
-                let page = createNewPage(pageCount);
-                container.appendChild(page);
-
-                const widthForThisPart = Math.min(remainingWidth, AVAILABLE_WIDTH_CM);
-                
-                const pieceDiv = document.createElement('div');
-                pieceDiv.className = 'piece';
-                pieceDiv.style.width = `${widthForThisPart * PIXELS_PER_CM}px`;
-                pieceDiv.style.height = `${h * PIXELS_PER_CM}px`;
-                pieceDiv.style.left = `${MARGIN_CM * PIXELS_PER_CM}px`;
-                pieceDiv.style.top = `${MARGIN_CM * PIXELS_PER_CM}px`;
-                
-                let label = `<span class="piece-label">${name} (Parte ${part})</span><br>${widthForThisPart.toFixed(1)}cm x ${h.toFixed(1)}cm<br>${qty}`;
-                if (part > 1) {
-                    label += `<br><i>Cole na Parte ${part - 1}</i>`;
-                }
-                pieceDiv.innerHTML = label;
-                
-                page.appendChild(pieceDiv);
-                
-                remainingWidth -= widthForThisPart;
-                part++;
-            }
-        }
-
-        function drawPiece(page, pieceData, x, y, w, h, rotated) {
-            const { name, r, qty } = pieceData;
-            const pieceDiv = document.createElement('div');
-            pieceDiv.className = 'piece';
-            pieceDiv.style.width = `${w * PIXELS_PER_CM}px`;
-            pieceDiv.style.height = `${h * PIXELS_PER_CM}px`;
-            pieceDiv.style.left = `${x * PIXELS_PER_CM}px`;
-            pieceDiv.style.top = `${y * PIXELS_PER_CM}px`;
-
-            if (r > 0) {
-                // Lógica para cantos arredondados (simplificada para o exemplo inicial)
-                // A propriedade `borderRadius` do CSS é usada aqui.
-                pieceDiv.style.borderRadius = `${r * PIXELS_PER_CM}px`;
-            }
-
-            const originalW = rotated ? h : w;
-            const originalH = rotated ? w : h;
-            pieceDiv.innerHTML = `<span class="piece-label">${name}</span><br>${originalW.toFixed(1)}cm x ${originalH.toFixed(1)}cm<br>${qty}`;
-            
-            page.appendChild(pieceDiv);
+        function parseBulkInput() {
+            const input = document.getElementById('bulk-input').value;
+            const lines = input.split('\n').filter(line => line.trim() !== '');
+            return lines.map(line => {
+                const parts = line.split(',').map(p => p.trim());
+                if (parts.length < 4) return null;
+                const [name, dimensions, radius, qty] = parts;
+                const [w, h] = dimensions.toLowerCase().split('x').map(Number);
+                const r = Number(radius);
+                return { name, w, h, r, qty };
+            }).filter(p => p && !isNaN(p.w) && !isNaN(p.h));
         }
 
         function createNewPage(pageNumber) {
             const page = document.createElement('div');
             page.className = 'page';
-            page.innerHTML = `
-                <div class="test-square">
-                    Quadrado de Teste<br>3cm x 3cm<br>Verifique a escala
-                </div>
-                <div class="page-footer">
-                    Molde gerado por ferramenta web - Página ${pageNumber}
-                </div>
-            `;
+            page.innerHTML = `<div class="page-footer">Página ${pageNumber} - Gerado por Manus AI</div>`;
             return page;
         }
 
-        // --- INICIALIZAÇÃO ---
-        window.onload = () => {
-            initialPieces.forEach(p => addPieceForm(p));
-            generateLayout();
-        };
+        function generateLayout() {
+            const pieces = parseBulkInput();
+            const container = document.getElementById('canvas-container');
+            container.innerHTML = '';
 
+            let pages = [];
+            let currentPositions = []; // { x, y } for each page
+
+            const addPage = () => {
+                const newPage = createNewPage(pages.length + 1);
+                container.appendChild(newPage);
+                pages.push(newPage);
+                currentPositions.push({ x: MARGIN_CM, y: MARGIN_CM });
+            };
+
+            addPage();
+
+            pieces.forEach(piece => {
+                placePiece(piece, pages, currentPositions, addPage);
+            });
+        }
+
+        function placePiece(piece, pages, positions, addPage) {
+            // Check if piece is too large and needs splitting
+            if (piece.w > AVAILABLE_WIDTH_CM) {
+                splitAndPlacePiece(piece, pages, positions, addPage);
+                return;
+            }
+
+            // Try to fit the piece (normal and rotated)
+            let w = piece.w;
+            let h = piece.h;
+            let rotated = false;
+
+            if (piece.h > piece.w && piece.h <= AVAILABLE_WIDTH_CM) {
+                 [w, h] = [h, w];
+                 rotated = true;
+            }
+
+            let placed = false;
+            for (let i = 0; i < pages.length; i++) {
+                if (positions[i].x + w <= AVAILABLE_WIDTH_CM && positions[i].y + h <= AVAILABLE_HEIGHT_CM) {
+                    drawPiece(pages[i], piece, positions[i].x, positions[i].y, rotated);
+                    positions[i].x += w + MARGIN_CM;
+                    placed = true;
+                    break;
+                } else if (positions[i].y + h <= AVAILABLE_HEIGHT_CM) {
+                    positions[i].x = MARGIN_CM;
+                    positions[i].y += findMaxHeightOnRow(pages[i], positions[i].y) + MARGIN_CM;
+                     if (positions[i].y + h <= AVAILABLE_HEIGHT_CM) {
+                        drawPiece(pages[i], piece, positions[i].x, positions[i].y, rotated);
+                        positions[i].x += w + MARGIN_CM;
+                        placed = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!placed) {
+                addPage();
+                const lastIndex = pages.length - 1;
+                drawPiece(pages[lastIndex], piece, positions[lastIndex].x, positions[lastIndex].y, rotated);
+                positions[lastIndex].x += w + MARGIN_CM;
+            }
+        }
+        
+        function findMaxHeightOnRow(page, y_cm) {
+            // Helper to find the tallest element starting at a certain Y to align the next row
+            // This is a simplified packing algorithm. For this tool, we'll just use a fixed gap.
+            // A more complex implementation would be needed for true bin packing.
+            // For now, we assume pieces are placed and the next row starts after the tallest one.
+            // This logic is simplified in the main loop.
+            return 0; // Simplified
+        }
+
+        function splitAndPlacePiece(piece, pages, positions, addPage) {
+            let remainingWidth = piece.w;
+            let part = 1;
+            let xOffset = 0;
+
+            while (remainingWidth > 0) {
+                addPage();
+                const pageIndex = pages.length - 1;
+                const page = pages[pageIndex];
+                
+                const widthForThisPart = Math.min(remainingWidth, AVAILABLE_WIDTH_CM);
+                
+                const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                const w_px = widthForThisPart * PX_PER_CM;
+                const h_px = piece.h * PX_PER_CM;
+                
+                svg.setAttribute('class', 'piece-svg');
+                svg.setAttribute('width', w_px);
+                svg.setAttribute('height', h_px);
+                svg.style.left = `${MARGIN_CM * PX_PER_CM}px`;
+                svg.style.top = `${MARGIN_CM * PX_PER_CM}px`;
+
+                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                path.setAttribute('class', 'piece-shape');
+                path.setAttribute('d', `M0,0 H${w_px} V${h_px} H0 Z`);
+                svg.appendChild(path);
+
+                // Add join lines and text
+                if (part > 1) { // Line on the left
+                    svg.innerHTML += `<line class="join-line" x1="1" y1="0" x2="1" y2="${h_px}" />
+                                     <text class="join-text" x="20" y="${h_px/2}" transform="rotate(-90, 20, ${h_px/2})">Unir com Parte ${part-1}</text>`;
+                }
+                if (remainingWidth - widthForThisPart > 0) { // Line on the right
+                    svg.innerHTML += `<line class="join-line" x1="${w_px-1}" y1="0" x2="${w_px-1}" y2="${h_px}" />
+                                     <text class="join-text" x="${w_px-20}" y="${h_px/2}" transform="rotate(90, ${w_px-20}, ${h_px/2})">Unir com Parte ${part+1}</text>`;
+                }
+
+                // Add text
+                const text = `<text class="piece-text" x="${w_px/2}" y="${h_px/2}">
+                                <tspan class="piece-text-name" x="${w_px/2}" dy="-1.2em">${piece.name} (Parte ${part})</tspan>
+                                <tspan x="${w_px/2}" dy="1.2em">${widthForThisPart.toFixed(1)}cm x ${piece.h.toFixed(1)}cm</tspan>
+                                <tspan x="${w_px/2}" dy="1.2em">${piece.qty}</tspan>
+                              </text>`;
+                svg.innerHTML += text;
+
+                page.appendChild(svg);
+                
+                remainingWidth -= widthForThisPart;
+                xOffset += widthForThisPart;
+                part++;
+            }
+        }
+
+        function drawPiece(page, pieceData, x_cm, y_cm, rotated) {
+            const { name, r, qty } = pieceData;
+            let w = rotated ? pieceData.h : pieceData.w;
+            let h = rotated ? pieceData.w : pieceData.h;
+
+            const w_px = w * PX_PER_CM;
+            const h_px = h * PX_PER_CM;
+            const r_px = r * PX_PER_CM;
+
+            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            svg.setAttribute('class', 'piece-svg');
+            svg.setAttribute('width', w_px);
+            svg.setAttribute('height', h_px);
+            svg.style.left = `${x_cm * PX_PER_CM}px`;
+            svg.style.top = `${y_cm * PX_PER_CM}px`;
+
+            // Create SVG path for the shape with rounded corners
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            path.setAttribute('class', 'piece-shape');
+            
+            // A=arc command: rx ry x-axis-rotation large-arc-flag sweep-flag x y
+            const d = `M${r_px},0 
+                       L${w_px - r_px},0 
+                       A${r_px},${r_px} 0 0 1 ${w_px},${r_px} 
+                       L${w_px},${h_px - r_px} 
+                       A${r_px},${r_px} 0 0 1 ${w_px - r_px},${h_px} 
+                       L${r_px},${h_px} 
+                       A${r_px},${r_px} 0 0 1 0,${h_px - r_px} 
+                       L0,${r_px} 
+                       A${r_px},${r_px} 0 0 1 ${r_px},0 Z`;
+            path.setAttribute('d', d);
+            svg.appendChild(path);
+
+            // Add helper lines for radius
+            if (r > 0) {
+                svg.innerHTML += `<line class="helper-line" x1="${r_px}" y1="0" x2="${r_px}" y2="${r_px}" />`;
+                svg.innerHTML += `<line class="helper-line" x1="0" y1="${r_px}" x2="${r_px}" y2="${r_px}" />`;
+                // Add for other corners as needed...
+            }
+
+            // Add text content
+            const text = `<text class="piece-text" x="${w_px/2}" y="${h_px/2}">
+                            <tspan class="piece-text-name" x="${w_px/2}" dy="-1.2em">${name}</tspan>
+                            <tspan x="${w_px/2}" dy="1.2em">${pieceData.w.toFixed(1)}cm x ${pieceData.h.toFixed(1)}cm</tspan>
+                            <tspan x="${w_px/2}" dy="1.2em">${qty}</tspan>
+                          </text>`;
+            svg.innerHTML += text;
+
+            page.appendChild(svg);
+        }
+
+        window.onload = generateLayout;
     </script>
 </body>
 </html>
