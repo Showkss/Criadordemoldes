@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerador de Moldes para Costura v3.0</title>
+    <title>Gerador de Moldes para Costura v3.1</title>
     <style>
         :root {
             --primary-color: #2c6e49; /* Verde escuro */
             --secondary-color: #4c956c; /* Verde médio */
-            --light-bg: #fefee3; /* Amarelo bem claro / Creme */
             --text-color: #333;
             --border-color: #ddd;
             --page-bg: #ffffff;
@@ -27,7 +26,7 @@
         }
         .container {
             display: flex;
-            flex-direction: column; /* Empilha por padrão (mobile-first) */
+            flex-direction: column; /* Mobile-first */
             gap: 20px;
             max-width: 1600px;
             margin: auto;
@@ -47,14 +46,13 @@
         h1 { font-size: 1.6em; }
         h2 { font-size: 1.3em; }
 
-        /* Layout para telas maiores (desktop) */
         @media (min-width: 992px) {
             .container {
                 flex-direction: row;
                 align-items: flex-start;
             }
             .controls {
-                flex: 0 0 450px; /* Largura fixa para os controles */
+                flex: 0 0 450px;
             }
             .preview-area {
                 flex: 1;
@@ -143,13 +141,14 @@
             stroke-width: 0.5;
             stroke-dasharray: 3 2;
             opacity: 0.8;
+            fill: none;
         }
         .piece-text {
             font-family: 'Segoe UI', sans-serif;
             font-size: 12px;
             fill: var(--primary-color);
             text-anchor: middle;
-            pointer-events: none; /* Para não interferir na seleção */
+            pointer-events: none;
         }
         .piece-text-name {
             font-weight: bold;
@@ -167,7 +166,6 @@
             text-anchor: middle;
         }
 
-        /* --- ESTILOS DE IMPRESSÃO --- */
         @media print {
             body { background-color: #fff; padding: 0; margin: 0; }
             .controls, .preview-area h1, .preview-area h2 { display: none; }
@@ -181,7 +179,7 @@
 
     <div class="container">
         <aside class="controls">
-            <h1>Gerador de Moldes 3.0</h1>
+            <h1>Gerador de Moldes 3.1</h1>
             <label for="bulk-input">Insira as medidas (Nome, Largura x Altura, raio: [valor] [cantos], Qtde):</label>
             <textarea id="bulk-input">Corpo Atrás, 26x15, raio: 3 (todos), 1x Tecido 3x Forro
 Corpo Frente (Baixo), 26x13, raio: 3 (inferiores), 1x Tecido 1x Forro
@@ -201,18 +199,16 @@ Bolso Tela 3, 26x12, raio: 0, 1x Tela</textarea>
 
         <main class="preview-area">
             <h1>Visualização para Impressão</h1>
-            <div id="canvas-container">
-                <!-- Páginas serão geradas aqui -->
-            </div>
+            <div id="canvas-container"></div>
         </main>
     </div>
 
     <script>
-        const PX_PER_CM = 37.795; // Aproximadamente 96 DPI
+        const PX_PER_CM = 37.795;
         const PAGE_WIDTH_CM = 21;
         const PAGE_HEIGHT_CM = 29.7;
         const MARGIN_CM = 1;
-        const GAP_CM = 0.5; // Espaçamento entre as peças
+        const GAP_CM = 0.5;
 
         const AVAILABLE_WIDTH_CM = PAGE_WIDTH_CM - (MARGIN_CM * 2);
         const AVAILABLE_HEIGHT_CM = PAGE_HEIGHT_CM - (MARGIN_CM * 2);
@@ -226,13 +222,13 @@ Bolso Tela 3, 26x12, raio: 0, 1x Tela</textarea>
                 
                 let r = 0, corners = 'none';
                 if (radiusStr && radiusStr.toLowerCase().includes('raio:')) {
-                    const match = radiusStr.match(/raio:\s*(\d+)\s*\((.+)\)/i);
+                    const match = radiusStr.match(/raio:\s*([\d.]+)\s*\((.+)\)/i);
                     if (match) {
                         r = Number(match[1]);
                         corners = match[2].toLowerCase();
                     }
                 }
-                return { name, w, h, r, corners, qty };
+                return { name, w, h, r, corners, qty, area: w * h };
             }).filter(p => p && p.w > 0 && p.h > 0);
         }
 
@@ -244,75 +240,96 @@ Bolso Tela 3, 26x12, raio: 0, 1x Tela</textarea>
         }
 
         function generateLayout() {
-            const pieces = parseBulkInput().sort((a, b) => b.h - a.h); // Ordena por altura (ajuda o packer)
+            const pieces = parseBulkInput().sort((a, b) => b.area - a.area);
             const container = document.getElementById('canvas-container');
             container.innerHTML = '';
 
-            let pages = [createNewPage(1)];
-            container.appendChild(pages[0]);
-            let nodes = [{ x: MARGIN_CM, y: MARGIN_CM, w: AVAILABLE_WIDTH_CM }];
+            let pages = [];
+            let packer = new Packer();
 
             for (const piece of pieces) {
-                // Lógica para peças que precisam ser divididas
-                if (piece.w > AVAILABLE_WIDTH_CM && piece.h > AVAILABLE_WIDTH_CM) {
-                     // Peça maior que a página em ambas as dimensões (caso raro)
-                     // Implementação simplificada: dividir apenas na largura
-                     splitAndPlacePiece(piece, pages, container);
-                     continue;
-                }
-                if (piece.w > AVAILABLE_WIDTH_CM) {
+                if (piece.w > AVAILABLE_WIDTH_CM || piece.h > AVAILABLE_WIDTH_CM) {
                     splitAndPlacePiece(piece, pages, container);
                     continue;
                 }
 
-                let bestFit = findBestFit(piece, nodes);
-
-                if (!bestFit) {
-                    const newPage = createNewPage(pages.length + 1);
-                    pages.push(newPage);
-                    container.appendChild(newPage);
-                    nodes = [{ x: MARGIN_CM, y: MARGIN_CM, w: AVAILABLE_WIDTH_CM }];
-                    bestFit = findBestFit(piece, nodes);
+                let fit = packer.fit(piece);
+                if (!fit) {
+                    packer.newPage();
+                    pages.push(createNewPage(pages.length + 1));
+                    container.appendChild(pages[pages.length - 1]);
+                    fit = packer.fit(piece);
                 }
                 
-                if (bestFit) {
-                    const { node, w, h, rotated } = bestFit;
-                    drawPiece(pages[pages.length - 1], piece, node.x, node.y, w, h, rotated);
-                    splitNode(node, w + GAP_CM, h + GAP_CM, nodes);
+                if (fit) {
+                    drawPiece(pages[pages.length - 1], piece, fit);
                 }
             }
         }
-        
-        function findBestFit(piece, nodes) {
-            let bestFit = null;
-            for (let i = 0; i < nodes.length; i++) {
-                const node = nodes[i];
-                // Tenta encaixar normal
-                if (piece.w <= node.w && piece.h <= AVAILABLE_HEIGHT_CM - node.y) {
-                    if (!bestFit || node.y < bestFit.node.y) {
-                        bestFit = { node, w: piece.w, h: piece.h, rotated: false };
-                    }
-                }
-                // Tenta encaixar rotacionado
-                if (piece.h <= node.w && piece.w <= AVAILABLE_HEIGHT_CM - node.y) {
-                     if (!bestFit || node.y < bestFit.node.y) {
-                        bestFit = { node, w: piece.h, h: piece.w, rotated: true };
-                    }
-                }
+
+        class Packer {
+            constructor() {
+                this.newPage();
             }
-            return bestFit;
+
+            newPage() {
+                this.nodes = [{ x: MARGIN_CM, y: MARGIN_CM, w: AVAILABLE_WIDTH_CM, h: AVAILABLE_HEIGHT_CM }];
+            }
+
+            fit(piece) {
+                let bestNode = null;
+                let bestFitW, bestFitH;
+
+                // Tenta encaixar sem rotação
+                for (let i = 0; i < this.nodes.length; i++) {
+                    let node = this.nodes[i];
+                    if (piece.w <= node.w && piece.h <= node.h) {
+                        bestNode = node;
+                        bestFitW = piece.w;
+                        bestFitH = piece.h;
+                        break;
+                    }
+                }
+
+                // Tenta encaixar com rotação
+                for (let i = 0; i < this.nodes.length; i++) {
+                    let node = this.nodes[i];
+                    if (piece.h <= node.w && piece.w <= node.h) {
+                        if (!bestNode || (bestNode && node.y < bestNode.y)) {
+                            bestNode = node;
+                            bestFitW = piece.h;
+                            bestFitH = piece.w;
+                        }
+                        break;
+                    }
+                }
+
+                if (bestNode) {
+                    const fit = {
+                        x: bestNode.x,
+                        y: bestNode.y,
+                        w: bestFitW,
+                        h: bestFitH,
+                        rotated: bestFitW === piece.h
+                    };
+                    this.splitNode(bestNode, fit.w, fit.h);
+                    return fit;
+                }
+                return null;
+            }
+
+            splitNode(node, w, h) {
+                this.nodes.push({ x: node.x + w + GAP_CM, y: node.y, w: node.w - w - GAP_CM, h: h });
+                this.nodes.push({ x: node.x, y: node.y + h + GAP_CM, w: node.w, h: node.h - h - GAP_CM });
+                this.nodes = this.nodes.filter(n => n.w > 0 && n.h > 0);
+                this.nodes.sort((a, b) => a.y - b.y || a.x - b.x);
+            }
         }
 
-        function splitNode(node, w, h, nodes) {
-            nodes.push({ x: node.x + w, y: node.y, w: node.w - w });
-            node.y += h;
-            node.w = w;
-            // Limpa e organiza os nós (simplificado)
-            nodes.sort((a, b) => a.y - b.y || a.x - b.x);
-        }
-
-        function drawPiece(page, pieceData, x_cm, y_cm, w_cm, h_cm, rotated) {
+        function drawPiece(page, pieceData, fit) {
             const { name, r, corners, qty } = pieceData;
+            const { x: x_cm, y: y_cm, w: w_cm, h: h_cm, rotated } = fit;
+
             const w_px = w_cm * PX_PER_CM;
             const h_px = h_cm * PX_PER_CM;
             const r_px = r * PX_PER_CM;
@@ -324,26 +341,23 @@ Bolso Tela 3, 26x12, raio: 0, 1x Tela</textarea>
             svg.style.left = `${x_cm * PX_PER_CM}px`;
             svg.style.top = `${y_cm * PX_PER_CM}px`;
 
-            // Definir raios para cada canto
-            let tl = 0, tr = 0, br = 0, bl = 0; // Top-Left, Top-Right, etc.
+            let tl = 0, tr = 0, br = 0, bl = 0;
             if (r > 0) {
-                if (corners.includes('todos')) { tl = tr = br = bl = r_px; }
-                if (corners.includes('superiores')) { tl = tr = r_px; }
-                if (corners.includes('inferiores')) { bl = br = r_px; }
+                const c = rotated ? { todos: 'todos', superiores: 'inferiores', inferiores: 'superiores' }[corners] : corners;
+                if (c.includes('todos')) { tl = tr = br = bl = r_px; }
+                if (c.includes('superiores')) { tl = tr = r_px; }
+                if (c.includes('inferiores')) { bl = br = r_px; }
             }
 
-            // Desenhar o caminho (path) com os raios corretos
             const d = `M ${tl},0 L ${w_px - tr},0 A ${tr},${tr} 0 0 1 ${w_px},${tr} L ${w_px},${h_px - br} A ${br},${br} 0 0 1 ${w_px - br},${h_px} L ${bl},${h_px} A ${bl},${bl} 0 0 1 0,${h_px - bl} L 0,${tl} A ${tl},${tl} 0 0 1 ${tl},0 Z`;
             const path = `<path class="piece-shape" d="${d}" />`;
             
-            // Desenhar linhas de guia para os raios
             let helperLines = '';
-            if (tl > 0) helperLines += `<path class="helper-line" d="M0,${tl} L${tl},${tl} L${tl},0" fill="none"/>`;
-            if (tr > 0) helperLines += `<path class="helper-line" d="M${w_px-tr},0 L${w_px-tr},${tr} L${w_px},${tr}" fill="none"/>`;
-            if (br > 0) helperLines += `<path class="helper-line" d="M${w_px},${h_px-br} L${w_px-br},${h_px-br} L${w_px-br},${h_px}" fill="none"/>`;
-            if (bl > 0) helperLines += `<path class="helper-line" d="M${bl},${h_px} L${bl},${h_px-bl} L0,${h_px-bl}" fill="none"/>`;
+            if (tl > 0) helperLines += `<path class="helper-line" d="M0,${tl} L${tl},${tl} L${tl},0" />`;
+            if (tr > 0) helperLines += `<path class="helper-line" d="M${w_px-tr},0 L${w_px-tr},${tr} L${w_px},${tr}" />`;
+            if (br > 0) helperLines += `<path class="helper-line" d="M${w_px},${h_px-br} L${w_px-br},${h_px-br} L${w_px-br},${h_px}" />`;
+            if (bl > 0) helperLines += `<path class="helper-line" d="M${bl},${h_px} L${bl},${h_px-bl} L0,${h_px-bl}" />`;
 
-            // Adicionar texto
             const text = `<text class="piece-text" x="${w_px/2}" y="${h_px/2}" dominant-baseline="middle">
                             <tspan class="piece-text-name" x="${w_px/2}">${name}</tspan>
                             <tspan x="${w_px/2}" dy="1.4em">${pieceData.w.toFixed(1)}cm x ${pieceData.h.toFixed(1)}cm</tspan>
@@ -355,10 +369,13 @@ Bolso Tela 3, 26x12, raio: 0, 1x Tela</textarea>
         }
         
         function splitAndPlacePiece(piece, pages, container) {
-            // Função simplificada para dividir peças muito largas
             let remainingWidth = piece.w;
             let part = 1;
             while (remainingWidth > 0) {
+                if (pages.length === 0) {
+                    pages.push(createNewPage(1));
+                    container.appendChild(pages[0]);
+                }
                 const newPage = createNewPage(pages.length + 1);
                 pages.push(newPage);
                 container.appendChild(newPage);
