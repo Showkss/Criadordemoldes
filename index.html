@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerador de Moldes para Costura v2.0</title>
+    <title>Gerador de Moldes para Costura v3.0</title>
     <style>
         :root {
             --primary-color: #2c6e49; /* Verde escuro */
@@ -16,35 +16,27 @@
             --piece-border: #4c956c;
         }
 
-        /* --- ESTILOS GERAIS --- */
+        /* --- ESTILOS GERAIS E RESPONSIVIDADE --- */
         body {
             font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             line-height: 1.6;
             background-color: #f4f4f4;
             color: var(--text-color);
             margin: 0;
-            padding: 20px;
+            padding: 15px;
         }
         .container {
             display: flex;
-            flex-wrap: wrap;
+            flex-direction: column; /* Empilha por padrão (mobile-first) */
             gap: 20px;
             max-width: 1600px;
             margin: auto;
         }
         .controls {
-            flex: 1;
-            min-width: 350px;
-            max-width: 500px;
             background: var(--page-bg);
-            padding: 25px;
+            padding: 20px;
             border-radius: 12px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-            height: fit-content;
-        }
-        .preview-area {
-            flex: 3;
-            min-width: 300px;
         }
         h1, h2 {
             color: var(--primary-color);
@@ -52,13 +44,27 @@
             padding-bottom: 10px;
             margin-top: 0;
         }
-        h1 { font-size: 1.8em; }
-        h2 { font-size: 1.4em; }
+        h1 { font-size: 1.6em; }
+        h2 { font-size: 1.3em; }
+
+        /* Layout para telas maiores (desktop) */
+        @media (min-width: 992px) {
+            .container {
+                flex-direction: row;
+                align-items: flex-start;
+            }
+            .controls {
+                flex: 0 0 450px; /* Largura fixa para os controles */
+            }
+            .preview-area {
+                flex: 1;
+            }
+        }
 
         /* --- ESTILOS DOS CONTROLES --- */
         #bulk-input {
             width: 100%;
-            height: 250px;
+            height: 280px;
             padding: 10px;
             border: 1px solid var(--border-color);
             border-radius: 8px;
@@ -134,15 +140,16 @@
         }
         .helper-line {
             stroke: var(--piece-border);
-            stroke-width: 1;
-            stroke-dasharray: 4 2;
-            opacity: 0.7;
+            stroke-width: 0.5;
+            stroke-dasharray: 3 2;
+            opacity: 0.8;
         }
         .piece-text {
             font-family: 'Segoe UI', sans-serif;
             font-size: 12px;
             fill: var(--primary-color);
             text-anchor: middle;
+            pointer-events: none; /* Para não interferir na seleção */
         }
         .piece-text-name {
             font-weight: bold;
@@ -150,7 +157,7 @@
         }
         .join-line {
             stroke: #d9534f;
-            stroke-width: 2;
+            stroke-width: 1.5;
             stroke-dasharray: 5 3;
         }
         .join-text {
@@ -174,20 +181,20 @@
 
     <div class="container">
         <aside class="controls">
-            <h1>Gerador de Moldes 2.0</h1>
-            <label for="bulk-input">Insira as medidas (Nome, Largura x Altura, Raio, Qtde):</label>
-            <textarea id="bulk-input">Corpo Atrás, 26x15, 3, 1x Tecido 3x Forro
-Corpo Frente (Baixo), 26x13, 3, 1x Tecido 1x Forro
-Corpo Frente (Cima), 26x9, 3, 1x Tecido 1x Forro
-Fundo, 42x14, 0, 1x Tecido 1x Forro
-Faixa Zíper, 42x7, 0, 2x Tecido 2x Forro
-Faixa Vivo, 82x4, 0, 2x Tecido
-EVA Estrutura 1, 22x11, 3, 1x EVA
-EVA Estrutura 2, 38x10, 0, 1x EVA
-EVA Estrutura 3, 38x3, 0, 2x EVA
-Bolso Tela 1, 26x12, 0, 1x Tela
-Bolso Tela 2, 26x3, 0, 1x Tela
-Bolso Tela 3, 26x12, 0, 1x Tela</textarea>
+            <h1>Gerador de Moldes 3.0</h1>
+            <label for="bulk-input">Insira as medidas (Nome, Largura x Altura, raio: [valor] [cantos], Qtde):</label>
+            <textarea id="bulk-input">Corpo Atrás, 26x15, raio: 3 (todos), 1x Tecido 3x Forro
+Corpo Frente (Baixo), 26x13, raio: 3 (inferiores), 1x Tecido 1x Forro
+Corpo Frente (Cima), 26x9, raio: 3 (superiores), 1x Tecido 1x Forro
+Fundo, 42x14, raio: 0, 1x Tecido 1x Forro
+Faixa Zíper, 42x7, raio: 0, 2x Tecido 2x Forro
+Faixa Vivo, 82x4, raio: 0, 2x Tecido
+EVA Estrutura 1, 22x11, raio: 3 (todos), 1x EVA
+EVA Estrutura 2, 38x10, raio: 0, 1x EVA
+EVA Estrutura 3, 38x3, raio: 0, 2x EVA
+Bolso Tela 1, 26x12, raio: 0, 1x Tela
+Bolso Tela 2, 26x3, raio: 0, 1x Tela
+Bolso Tela 3, 26x12, raio: 0, 1x Tela</textarea>
             <button onclick="generateLayout()">Gerar Moldes</button>
             <button onclick="window.print()" class="print-button">Salvar como PDF / Imprimir</button>
         </aside>
@@ -201,28 +208,32 @@ Bolso Tela 3, 26x12, 0, 1x Tela</textarea>
     </div>
 
     <script>
-        const DPI = 96;
-        const CM_PER_INCH = 2.54;
-        const PX_PER_CM = DPI / CM_PER_INCH;
-
+        const PX_PER_CM = 37.795; // Aproximadamente 96 DPI
         const PAGE_WIDTH_CM = 21;
         const PAGE_HEIGHT_CM = 29.7;
         const MARGIN_CM = 1;
+        const GAP_CM = 0.5; // Espaçamento entre as peças
 
         const AVAILABLE_WIDTH_CM = PAGE_WIDTH_CM - (MARGIN_CM * 2);
         const AVAILABLE_HEIGHT_CM = PAGE_HEIGHT_CM - (MARGIN_CM * 2);
 
         function parseBulkInput() {
             const input = document.getElementById('bulk-input').value;
-            const lines = input.split('\n').filter(line => line.trim() !== '');
-            return lines.map(line => {
+            return input.split('\n').filter(line => line.trim() !== '').map(line => {
                 const parts = line.split(',').map(p => p.trim());
-                if (parts.length < 4) return null;
-                const [name, dimensions, radius, qty] = parts;
-                const [w, h] = dimensions.toLowerCase().split('x').map(Number);
-                const r = Number(radius);
-                return { name, w, h, r, qty };
-            }).filter(p => p && !isNaN(p.w) && !isNaN(p.h));
+                const [name, dims, radiusStr, qty] = parts;
+                const [w, h] = dims.toLowerCase().split('x').map(Number);
+                
+                let r = 0, corners = 'none';
+                if (radiusStr && radiusStr.toLowerCase().includes('raio:')) {
+                    const match = radiusStr.match(/raio:\s*(\d+)\s*\((.+)\)/i);
+                    if (match) {
+                        r = Number(match[1]);
+                        corners = match[2].toLowerCase();
+                    }
+                }
+                return { name, w, h, r, corners, qty };
+            }).filter(p => p && p.w > 0 && p.h > 0);
         }
 
         function createNewPage(pageNumber) {
@@ -233,140 +244,77 @@ Bolso Tela 3, 26x12, 0, 1x Tela</textarea>
         }
 
         function generateLayout() {
-            const pieces = parseBulkInput();
+            const pieces = parseBulkInput().sort((a, b) => b.h - a.h); // Ordena por altura (ajuda o packer)
             const container = document.getElementById('canvas-container');
             container.innerHTML = '';
 
-            let pages = [];
-            let currentPositions = []; // { x, y } for each page
+            let pages = [createNewPage(1)];
+            container.appendChild(pages[0]);
+            let nodes = [{ x: MARGIN_CM, y: MARGIN_CM, w: AVAILABLE_WIDTH_CM }];
 
-            const addPage = () => {
-                const newPage = createNewPage(pages.length + 1);
-                container.appendChild(newPage);
-                pages.push(newPage);
-                currentPositions.push({ x: MARGIN_CM, y: MARGIN_CM });
-            };
-
-            addPage();
-
-            pieces.forEach(piece => {
-                placePiece(piece, pages, currentPositions, addPage);
-            });
-        }
-
-        function placePiece(piece, pages, positions, addPage) {
-            // Check if piece is too large and needs splitting
-            if (piece.w > AVAILABLE_WIDTH_CM) {
-                splitAndPlacePiece(piece, pages, positions, addPage);
-                return;
-            }
-
-            // Try to fit the piece (normal and rotated)
-            let w = piece.w;
-            let h = piece.h;
-            let rotated = false;
-
-            if (piece.h > piece.w && piece.h <= AVAILABLE_WIDTH_CM) {
-                 [w, h] = [h, w];
-                 rotated = true;
-            }
-
-            let placed = false;
-            for (let i = 0; i < pages.length; i++) {
-                if (positions[i].x + w <= AVAILABLE_WIDTH_CM && positions[i].y + h <= AVAILABLE_HEIGHT_CM) {
-                    drawPiece(pages[i], piece, positions[i].x, positions[i].y, rotated);
-                    positions[i].x += w + MARGIN_CM;
-                    placed = true;
-                    break;
-                } else if (positions[i].y + h <= AVAILABLE_HEIGHT_CM) {
-                    positions[i].x = MARGIN_CM;
-                    positions[i].y += findMaxHeightOnRow(pages[i], positions[i].y) + MARGIN_CM;
-                     if (positions[i].y + h <= AVAILABLE_HEIGHT_CM) {
-                        drawPiece(pages[i], piece, positions[i].x, positions[i].y, rotated);
-                        positions[i].x += w + MARGIN_CM;
-                        placed = true;
-                        break;
-                    }
+            for (const piece of pieces) {
+                // Lógica para peças que precisam ser divididas
+                if (piece.w > AVAILABLE_WIDTH_CM && piece.h > AVAILABLE_WIDTH_CM) {
+                     // Peça maior que a página em ambas as dimensões (caso raro)
+                     // Implementação simplificada: dividir apenas na largura
+                     splitAndPlacePiece(piece, pages, container);
+                     continue;
                 }
-            }
+                if (piece.w > AVAILABLE_WIDTH_CM) {
+                    splitAndPlacePiece(piece, pages, container);
+                    continue;
+                }
 
-            if (!placed) {
-                addPage();
-                const lastIndex = pages.length - 1;
-                drawPiece(pages[lastIndex], piece, positions[lastIndex].x, positions[lastIndex].y, rotated);
-                positions[lastIndex].x += w + MARGIN_CM;
+                let bestFit = findBestFit(piece, nodes);
+
+                if (!bestFit) {
+                    const newPage = createNewPage(pages.length + 1);
+                    pages.push(newPage);
+                    container.appendChild(newPage);
+                    nodes = [{ x: MARGIN_CM, y: MARGIN_CM, w: AVAILABLE_WIDTH_CM }];
+                    bestFit = findBestFit(piece, nodes);
+                }
+                
+                if (bestFit) {
+                    const { node, w, h, rotated } = bestFit;
+                    drawPiece(pages[pages.length - 1], piece, node.x, node.y, w, h, rotated);
+                    splitNode(node, w + GAP_CM, h + GAP_CM, nodes);
+                }
             }
         }
         
-        function findMaxHeightOnRow(page, y_cm) {
-            // Helper to find the tallest element starting at a certain Y to align the next row
-            // This is a simplified packing algorithm. For this tool, we'll just use a fixed gap.
-            // A more complex implementation would be needed for true bin packing.
-            // For now, we assume pieces are placed and the next row starts after the tallest one.
-            // This logic is simplified in the main loop.
-            return 0; // Simplified
-        }
-
-        function splitAndPlacePiece(piece, pages, positions, addPage) {
-            let remainingWidth = piece.w;
-            let part = 1;
-            let xOffset = 0;
-
-            while (remainingWidth > 0) {
-                addPage();
-                const pageIndex = pages.length - 1;
-                const page = pages[pageIndex];
-                
-                const widthForThisPart = Math.min(remainingWidth, AVAILABLE_WIDTH_CM);
-                
-                const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-                const w_px = widthForThisPart * PX_PER_CM;
-                const h_px = piece.h * PX_PER_CM;
-                
-                svg.setAttribute('class', 'piece-svg');
-                svg.setAttribute('width', w_px);
-                svg.setAttribute('height', h_px);
-                svg.style.left = `${MARGIN_CM * PX_PER_CM}px`;
-                svg.style.top = `${MARGIN_CM * PX_PER_CM}px`;
-
-                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                path.setAttribute('class', 'piece-shape');
-                path.setAttribute('d', `M0,0 H${w_px} V${h_px} H0 Z`);
-                svg.appendChild(path);
-
-                // Add join lines and text
-                if (part > 1) { // Line on the left
-                    svg.innerHTML += `<line class="join-line" x1="1" y1="0" x2="1" y2="${h_px}" />
-                                     <text class="join-text" x="20" y="${h_px/2}" transform="rotate(-90, 20, ${h_px/2})">Unir com Parte ${part-1}</text>`;
+        function findBestFit(piece, nodes) {
+            let bestFit = null;
+            for (let i = 0; i < nodes.length; i++) {
+                const node = nodes[i];
+                // Tenta encaixar normal
+                if (piece.w <= node.w && piece.h <= AVAILABLE_HEIGHT_CM - node.y) {
+                    if (!bestFit || node.y < bestFit.node.y) {
+                        bestFit = { node, w: piece.w, h: piece.h, rotated: false };
+                    }
                 }
-                if (remainingWidth - widthForThisPart > 0) { // Line on the right
-                    svg.innerHTML += `<line class="join-line" x1="${w_px-1}" y1="0" x2="${w_px-1}" y2="${h_px}" />
-                                     <text class="join-text" x="${w_px-20}" y="${h_px/2}" transform="rotate(90, ${w_px-20}, ${h_px/2})">Unir com Parte ${part+1}</text>`;
+                // Tenta encaixar rotacionado
+                if (piece.h <= node.w && piece.w <= AVAILABLE_HEIGHT_CM - node.y) {
+                     if (!bestFit || node.y < bestFit.node.y) {
+                        bestFit = { node, w: piece.h, h: piece.w, rotated: true };
+                    }
                 }
-
-                // Add text
-                const text = `<text class="piece-text" x="${w_px/2}" y="${h_px/2}">
-                                <tspan class="piece-text-name" x="${w_px/2}" dy="-1.2em">${piece.name} (Parte ${part})</tspan>
-                                <tspan x="${w_px/2}" dy="1.2em">${widthForThisPart.toFixed(1)}cm x ${piece.h.toFixed(1)}cm</tspan>
-                                <tspan x="${w_px/2}" dy="1.2em">${piece.qty}</tspan>
-                              </text>`;
-                svg.innerHTML += text;
-
-                page.appendChild(svg);
-                
-                remainingWidth -= widthForThisPart;
-                xOffset += widthForThisPart;
-                part++;
             }
+            return bestFit;
         }
 
-        function drawPiece(page, pieceData, x_cm, y_cm, rotated) {
-            const { name, r, qty } = pieceData;
-            let w = rotated ? pieceData.h : pieceData.w;
-            let h = rotated ? pieceData.w : pieceData.h;
+        function splitNode(node, w, h, nodes) {
+            nodes.push({ x: node.x + w, y: node.y, w: node.w - w });
+            node.y += h;
+            node.w = w;
+            // Limpa e organiza os nós (simplificado)
+            nodes.sort((a, b) => a.y - b.y || a.x - b.x);
+        }
 
-            const w_px = w * PX_PER_CM;
-            const h_px = h * PX_PER_CM;
+        function drawPiece(page, pieceData, x_cm, y_cm, w_cm, h_cm, rotated) {
+            const { name, r, corners, qty } = pieceData;
+            const w_px = w_cm * PX_PER_CM;
+            const h_px = h_cm * PX_PER_CM;
             const r_px = r * PX_PER_CM;
 
             const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -376,39 +324,75 @@ Bolso Tela 3, 26x12, 0, 1x Tela</textarea>
             svg.style.left = `${x_cm * PX_PER_CM}px`;
             svg.style.top = `${y_cm * PX_PER_CM}px`;
 
-            // Create SVG path for the shape with rounded corners
-            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            path.setAttribute('class', 'piece-shape');
-            
-            // A=arc command: rx ry x-axis-rotation large-arc-flag sweep-flag x y
-            const d = `M${r_px},0 
-                       L${w_px - r_px},0 
-                       A${r_px},${r_px} 0 0 1 ${w_px},${r_px} 
-                       L${w_px},${h_px - r_px} 
-                       A${r_px},${r_px} 0 0 1 ${w_px - r_px},${h_px} 
-                       L${r_px},${h_px} 
-                       A${r_px},${r_px} 0 0 1 0,${h_px - r_px} 
-                       L0,${r_px} 
-                       A${r_px},${r_px} 0 0 1 ${r_px},0 Z`;
-            path.setAttribute('d', d);
-            svg.appendChild(path);
-
-            // Add helper lines for radius
+            // Definir raios para cada canto
+            let tl = 0, tr = 0, br = 0, bl = 0; // Top-Left, Top-Right, etc.
             if (r > 0) {
-                svg.innerHTML += `<line class="helper-line" x1="${r_px}" y1="0" x2="${r_px}" y2="${r_px}" />`;
-                svg.innerHTML += `<line class="helper-line" x1="0" y1="${r_px}" x2="${r_px}" y2="${r_px}" />`;
-                // Add for other corners as needed...
+                if (corners.includes('todos')) { tl = tr = br = bl = r_px; }
+                if (corners.includes('superiores')) { tl = tr = r_px; }
+                if (corners.includes('inferiores')) { bl = br = r_px; }
             }
 
-            // Add text content
-            const text = `<text class="piece-text" x="${w_px/2}" y="${h_px/2}">
-                            <tspan class="piece-text-name" x="${w_px/2}" dy="-1.2em">${name}</tspan>
-                            <tspan x="${w_px/2}" dy="1.2em">${pieceData.w.toFixed(1)}cm x ${pieceData.h.toFixed(1)}cm</tspan>
+            // Desenhar o caminho (path) com os raios corretos
+            const d = `M ${tl},0 L ${w_px - tr},0 A ${tr},${tr} 0 0 1 ${w_px},${tr} L ${w_px},${h_px - br} A ${br},${br} 0 0 1 ${w_px - br},${h_px} L ${bl},${h_px} A ${bl},${bl} 0 0 1 0,${h_px - bl} L 0,${tl} A ${tl},${tl} 0 0 1 ${tl},0 Z`;
+            const path = `<path class="piece-shape" d="${d}" />`;
+            
+            // Desenhar linhas de guia para os raios
+            let helperLines = '';
+            if (tl > 0) helperLines += `<path class="helper-line" d="M0,${tl} L${tl},${tl} L${tl},0" fill="none"/>`;
+            if (tr > 0) helperLines += `<path class="helper-line" d="M${w_px-tr},0 L${w_px-tr},${tr} L${w_px},${tr}" fill="none"/>`;
+            if (br > 0) helperLines += `<path class="helper-line" d="M${w_px},${h_px-br} L${w_px-br},${h_px-br} L${w_px-br},${h_px}" fill="none"/>`;
+            if (bl > 0) helperLines += `<path class="helper-line" d="M${bl},${h_px} L${bl},${h_px-bl} L0,${h_px-bl}" fill="none"/>`;
+
+            // Adicionar texto
+            const text = `<text class="piece-text" x="${w_px/2}" y="${h_px/2}" dominant-baseline="middle">
+                            <tspan class="piece-text-name" x="${w_px/2}">${name}</tspan>
+                            <tspan x="${w_px/2}" dy="1.4em">${pieceData.w.toFixed(1)}cm x ${pieceData.h.toFixed(1)}cm</tspan>
                             <tspan x="${w_px/2}" dy="1.2em">${qty}</tspan>
                           </text>`;
-            svg.innerHTML += text;
-
+            
+            svg.innerHTML = path + helperLines + text;
             page.appendChild(svg);
+        }
+        
+        function splitAndPlacePiece(piece, pages, container) {
+            // Função simplificada para dividir peças muito largas
+            let remainingWidth = piece.w;
+            let part = 1;
+            while (remainingWidth > 0) {
+                const newPage = createNewPage(pages.length + 1);
+                pages.push(newPage);
+                container.appendChild(newPage);
+
+                const widthForThisPart = Math.min(remainingWidth, AVAILABLE_WIDTH_CM);
+                const w_px = widthForThisPart * PX_PER_CM;
+                const h_px = piece.h * PX_PER_CM;
+
+                const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                svg.setAttribute('class', 'piece-svg');
+                svg.setAttribute('width', w_px);
+                svg.setAttribute('height', h_px);
+                svg.style.left = `${MARGIN_CM * PX_PER_CM}px`;
+                svg.style.top = `${MARGIN_CM * PX_PER_CM}px`;
+
+                let path = `<path class="piece-shape" d="M0,0 H${w_px} V${h_px} H0 Z" />`;
+                let joinLines = '';
+                if (part > 1) {
+                    joinLines += `<line class="join-line" x1="1" y1="0" x2="1" y2="${h_px}" /><text class="join-text" x="20" y="${h_px/2}" transform="rotate(-90, 20, ${h_px/2})">Unir com Parte ${part-1}</text>`;
+                }
+                if (remainingWidth - widthForThisPart > 0) {
+                    joinLines += `<line class="join-line" x1="${w_px-1}" y1="0" x2="${w_px-1}" y2="${h_px}" /><text class="join-text" x="${w_px-20}" y="${h_px/2}" transform="rotate(90, ${w_px-20}, ${h_px/2})">Unir com Parte ${part+1}</text>`;
+                }
+                const text = `<text class="piece-text" x="${w_px/2}" y="${h_px/2}" dominant-baseline="middle">
+                                <tspan class="piece-text-name" x="${w_px/2}">${piece.name} (Parte ${part})</tspan>
+                                <tspan x="${w_px/2}" dy="1.4em">${widthForThisPart.toFixed(1)}cm x ${piece.h.toFixed(1)}cm</tspan>
+                                <tspan x="${w_px/2}" dy="1.2em">${piece.qty}</tspan>
+                              </text>`;
+                svg.innerHTML = path + joinLines + text;
+                newPage.appendChild(svg);
+
+                remainingWidth -= widthForThisPart;
+                part++;
+            }
         }
 
         window.onload = generateLayout;
